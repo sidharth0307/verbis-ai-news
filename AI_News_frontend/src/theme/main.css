@@ -1,0 +1,94 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+/* 1. Standard Tailwind v4 Theme Block */
+@theme {
+  /* Editorial Color Palette */
+  /* Editorial Color Palette - Softened Light Mode */
+  --color-ink: #1e293b;
+  /* Slate 800 - Softer than pure black */
+  --color-paper: #fdfbf7;
+  /* Warm Alabaster - Much easier on eyes than #ffffff */
+  --color-surface: #f3f4f6;
+  /* Gray 100 - Distinct but soft contrast */
+  --color-accent: #2563eb;
+  --color-muted: #64748b;
+  --color-border: #e2e8f0;
+
+  /* Typography */
+  --font-serif: "Ibarra Real Nova", serif;
+  --font-sans: "Inter", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+}
+
+/* 2. Scoped Styling & Dark Mode Logic */
+@layer base {
+
+  /* Apply to the admin section specifically */
+  .admin-theme {
+    @apply antialiased transition-colors duration-300;
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+  }
+
+  /* Headings only inside admin-theme */
+  .admin-theme h1,
+  .admin-theme h2,
+  .admin-theme h3,
+  .admin-theme h4 {
+    @apply font-serif font-black tracking-tight;
+  }
+
+  /* Admin Scoped Dark Mode */
+  .admin-theme.dark {
+    --color-ink: #f8fafc;
+    --color-paper: #0b1120;
+    --color-surface: #1e293b;
+    --color-accent: #6366f1;
+    --color-muted: #94a3b8;
+    --color-border: #1e293b;
+
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+  }
+}
+
+/* 3. Global Dark Mode (Root Level) */
+:root.dark {
+  --color-ink: #f8fafc;
+  --color-paper: #020617;
+  /* Slate 950 - Very Dark */
+  --color-surface: #0f172a;
+  /* Slate 900 */
+  --color-accent: #3b82f6;
+  /* Blue 500 */
+  --color-muted: #94a3b8;
+  /* Slate 400 */
+  --color-border: #1e293b;
+  /* Slate 800 */
+}
+
+/* 4. Global Defaults */
+html {
+  @apply antialiased scroll-smooth;
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+}
+
+body {
+  @apply transition-colors duration-500;
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}

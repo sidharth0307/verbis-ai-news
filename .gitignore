@@ -1,0 +1,7 @@
+node_modules/
+.env
+.env.local
+**/.env
+AI_News_frontend/dist/
+AI_News_backend/node_modules/
+AI_News_frontend/node_modules/
