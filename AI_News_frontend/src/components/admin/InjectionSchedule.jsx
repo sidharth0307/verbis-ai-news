@@ -17,6 +17,7 @@ import {
   deleteSchedule,
   getActiveSchedules
 } from "../../api/schedule";
+import categoryApi from "../../api/categories";
 
 const InjectionSchedule = ({ emptyCategories = [] }) => {
   const [rules, setRules] = useState([]);
@@ -208,7 +209,7 @@ const CreateScheduleModal = ({ isOpen, onClose, onRefresh }) => {
     if (isOpen) {
       const fetchSilos = async () => {
         try {
-          const res = await getCategories();
+          const res = await categoryApi.getAll();
           setAvailableSilos(res);
           // Set first silo as default automatically
           if (res.length > 0 && !formData.category) {
