@@ -67,7 +67,6 @@ ArticleSchema.pre('save', async function () {
 
       this.slug = generatedSlug;
     }
-    // No next() call needed for async hooks!
   } catch (err) {
     // If slugify fails, this will throw the error up to Article.create
     throw err;
@@ -75,9 +74,7 @@ ArticleSchema.pre('save', async function () {
 });
 
 // Indexing for performance
-
-ArticleSchema.index({ publishedAt: -1 });      // feed sorting
-ArticleSchema.index({ category: 1 });          // category filter
+ArticleSchema.index({ category: 1, publishedAt: -1 });
 ArticleSchema.index({ url: 1 }, { unique: true }); // deduplication
 ArticleSchema.index({
   title: "text",

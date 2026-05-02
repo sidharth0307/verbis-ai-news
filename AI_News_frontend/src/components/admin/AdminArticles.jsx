@@ -4,6 +4,7 @@ import * as articleApi from "../../api/articles";
 import EditArticleDrawer from "./EditArticleDrawer";
 import CreateAIArticleModal from "./CreateAIArticleModal"; // Corrected typo
 import ArticleTable from "./ArticleTable";
+import categoryApi from "../../api/categories";
 
 const ArticlesTab = ({ refreshParentStats }) => {
   // --- State ---
@@ -62,7 +63,7 @@ const ArticlesTab = ({ refreshParentStats }) => {
   useEffect(() => {
     const fetchCats = async () => {
       try {
-        const res = await articleApi.getCategories();
+        const res = await categoryApi.getAll();
         setAvailableCategories(res || []);
       } catch (err) { console.error("Silo sync failed", err); }
     };
@@ -142,7 +143,7 @@ const ArticlesTab = ({ refreshParentStats }) => {
           <div className="flex items-center gap-3">
             <div className="h-2 w-2 rounded-full bg-accent animate-pulse" />
             <p className="text-[10px] font-black uppercase tracking-[0.3em] text-muted">
-              Active Neural Assets: {totalArticles.toString().padStart(4, '0')}
+              Total Article Assets: {totalArticles.toString().padStart(4, '0')}
             </p>
           </div>
         </div>
@@ -152,7 +153,7 @@ const ArticlesTab = ({ refreshParentStats }) => {
           className="group relative overflow-hidden bg-accent text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] transition-all hover:shadow-[0_0_30px_-5px_var(--color-accent)] active:scale-95 flex items-center gap-3"
         >
           <Zap size={14} className="group-hover:fill-white transition-all" /> 
-          Initiate Synthesis
+          Initiate Synthesis with AI
         </button>
       </div>
 
@@ -162,7 +163,7 @@ const ArticlesTab = ({ refreshParentStats }) => {
           <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-muted group-focus-within:text-accent transition-colors" size={18} />
           <input 
             type="text"
-            placeholder="Search by keyword or ID..."
+            placeholder="Search by keyword"
             className="w-full pl-14 pr-6 py-5 bg-paper border border-border rounded-3xl text-xs font-bold text-ink outline-none focus:ring-2 focus:ring-accent/10 focus:border-accent transition-all uppercase placeholder:text-muted/40 shadow-sm shadow-black/5"
             onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
           />
@@ -174,7 +175,7 @@ const ArticlesTab = ({ refreshParentStats }) => {
             value={selectedCategory}
             onChange={(e) => { setSelectedCategory(e.target.value); setCurrentPage(1); }}
           >
-            <option value="all">Global Archive</option>
+            <option value="all">All Articles</option>
             {availableCategories.map((cat) => (
               <option key={cat._id} value={cat.slug}>{cat.name}</option>
             ))}
@@ -210,7 +211,7 @@ const ArticlesTab = ({ refreshParentStats }) => {
               <Terminal size={14} className="text-accent" />
             </div>
             <span className="font-mono text-[11px] font-bold uppercase text-muted tracking-tight">
-              Pointer: <span className="text-ink">{currentPage}</span> / {totalPages}
+              Page: <span className="text-ink">{currentPage}</span> / {totalPages}
             </span>
           </div>
 

@@ -10,6 +10,8 @@ export const logoutUser = async () => {
 
 export const registerUser = (data) => api.post("/users/register", data);
 
+export const verifyOTP = (data) => api.post("/users/verify-otp", data);
+
 export const getMe = async () => {
   const { data } = await api.get("/profile/me");
   return data;

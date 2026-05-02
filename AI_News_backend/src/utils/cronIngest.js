@@ -2,7 +2,6 @@ const cron = require("node-cron");
 const Article = require("../models/Article");
 const { fetchRawNews } = require("./fetchRawNews");
 const { processNewsWithAI } = require("../services/newsAI.service");
-const { getRedis } = require("../config/redis");
 const { addWatermarkAndLogo } = require("../services/watermark.service");
 const cloudinary = require("../config/cloudinary");
 const InjectionScheduleModel = require("../models/InjectionScheduleModel");
@@ -10,6 +9,11 @@ const { getPublicId } = require("./cloudinaryHelper");
 const slugify = require("slugify");
 const settingsModel = require("../models/settingsModel");
 const CategoryModel = require("../models/CategoryModel");
+
+// Constants for Burst Ingestion Mode
+const BURST_START_HOUR = 8; 
+const BURST_END_HOUR = 12;
+const BURST_WINDOW_MINUTES = (BURST_END_HOUR - BURST_START_HOUR) * 60; // 240
 
 /**
  * Cleanup function to remove images from Cloudinary for articles 
@@ -61,24 +65,6 @@ async function cleanupCloudinaryStorage() {
   }
 }
 
-// Add this helper to your AI Service or at the top of the file
-async function generateSearchQuery(categoryName) {
-  try {
-    // We use a small, fast prompt to get keywords
-    const prompt = `Act as a news SEO expert. Convert the category "${categoryName}" into a GNews API search query. 
-    Use Boolean operators (OR) and quotes. Keep it under 5 words. 
-    Example Input: "THE AI LIFE" -> Output: ChatGPT OR "Artificial Intelligence" OR Robotics
-    Example Input: "WORK 2.0" -> Output: "Remote Work" OR "Future of Work" OR Automation
-    Output only the query string.`;
-
-    const result = await processNewsWithAI(prompt); // Reusing your existing AI service
-    // Ensure we strip any accidental quotes or "Output:" text
-    return result.title.replace(/["']/g, "");
-  } catch (err) {
-    return categoryName; // Fallback to category name if AI fails
-  }
-}
-
 /**
  * TASK 1: ADAPTIVE INGESTION CRON
  * Dynamically adjusts batch size based on cron frequency and remaining daily quota.
@@ -123,13 +109,20 @@ const runAdaptiveIngestion = async () => {
   }
 
   const now = new Date();
+  const currentHour = now.getHours();
+
+  // GUARD: If outside the 4-hour window, don't waste Render hours
+  if (currentHour < BURST_START_HOUR || currentHour >= BURST_END_HOUR) {
+    console.log("System in Hibernation. Outside 8AM-12PM Burst Window.");
+    return;
+  }
   console.log("--- Starting Smart Parallel Adaptive Ingestion ---");
   isIngesting = true;
 
   try {
     const settings = await settingsModel.findOne({ key: "model_config" });
     const cronSchedule = settings?.cronSchedule || "*/30 * * * *";
-    const cronInterval = cronSchedule.includes('/') ? parseInt(cronSchedule.split('/')[1]) : 60;
+    const cronInterval = cronSchedule.includes('/') ? parseInt(cronSchedule.split('/')[1]) : 30;
 
     await cleanupCloudinaryStorage();
 
@@ -149,24 +142,65 @@ const runAdaptiveIngestion = async () => {
     for (const rule of activeRules) {
       try {
         // --- STEP A: AI EXPANDS THE CATEGORY ---
-        console.log(` AI is architecting query for: ${rule.category}`);
-        const masterCategory = await CategoryModel.findOne({ name: rule.category });
-        const categorySlug = masterCategory ? masterCategory.slug : "general";
-        // Use the custom searchQuery if it exists in DB, otherwise use AI expansion
-        const expandedQuery = masterCategory?.searchQuery || await generateSearchQuery(rule.category);
-        console.log(` GNews Query: ${expandedQuery}`);
+        console.log(`AI is architecting query for: ${rule.category}`);
+        
+        // 1. Fix the lookup: Match by name OR slug 
+        // (Handles both "The AI Pulse" and "the-ai-pulse")
+        const masterCategory = await CategoryModel.findOne({ 
+          $or: [
+            { name: rule.category },
+            { slug: rule.category }
+          ]
+        });
+        
+        const categorySlug = masterCategory ? masterCategory.slug : slugify(rule.category, { lower: true, strict: true });
+        
+        // Get the raw query from DB, or fallback to AI
+        let rawQuery = masterCategory?.searchQuery || await generateSearchQuery(rule.category);
+        
+        // 2. Fix GNews Syntax & "AND" Trap
+        // Strip problematic quotes that cause 400 Syntax Errors
+        let safeQuery = rawQuery.replace(/["']/g, "").trim();
+
+        // If the query is just a list of words (no OR statements yet), format it
+        if (!safeQuery.includes("OR")) {
+          safeQuery = safeQuery
+            .split(" ")
+            .filter(word => word.trim().length > 2) // Remove tiny words
+            .slice(0, 3) // Take max 3 keywords to keep GNews happy
+            .join(" OR "); // Search for ANY of these words, not ALL
+        }
+
+        console.log(`GNews Query: ${safeQuery}`);
 
         // --- STEP B: ADAPTIVE MATH ---
-        const totalRemainingToday = rule.articlesPerDay - rule.countToday;
-        const minutesLeftInDay = 1440 - (now.getHours() * 60 + now.getMinutes());
-        const remainingRuns = Math.max(1, Math.floor(minutesLeftInDay / cronInterval));
-        const batchSize = Math.ceil(totalRemainingToday / remainingRuns);
+       // 1. Reset logic if it's the first run of the window
+      const lastRunDate = rule.lastRun ? new Date(rule.lastRun).toDateString() : null;
+      
+      if (lastRunDate !== now.toDateString()) {
+        rule.countToday = 0;
+        rule.daysRemaining = Math.max(0, rule.daysRemaining - 1);
+        if (rule.daysRemaining === 0) rule.status = 'completed';
+        console.log(` New Day detected for ${rule.category}. Resetting Quota.`);
+      }
+
+      const totalRemainingToday = rule.articlesPerDay - rule.countToday;
+
+      // 2. Calculate minutes left IN THE WINDOW, not the day
+      const minutesIntoWindow = (currentHour - BURST_START_HOUR) * 60 + now.getMinutes();
+      const minutesLeftInWindow = Math.max(1, BURST_WINDOW_MINUTES - minutesIntoWindow);
+
+      // 3. Batch Size based on Burst Timing
+      const remainingRuns = Math.max(1, Math.floor(minutesLeftInWindow / cronInterval));
+      const batchSize = Math.ceil(totalRemainingToday / remainingRuns);
+
+      console.log(`Burst Window: ${minutesLeftInWindow}m left. Batch size: ${batchSize}`);
 
         // --- STEP C: FETCH ---
-        const rawArticles = await fetchRawNews(expandedQuery);
+        const rawArticles = await fetchRawNews(safeQuery);
 
         if (!rawArticles?.length) {
-          console.log(`No results for ${expandedQuery}. Skipping.`);
+          console.log(`No results for ${safeQuery}. Skipping.`);
           continue;
         }
 
@@ -218,12 +252,6 @@ const runAdaptiveIngestion = async () => {
       }
     }
 
-    const redis = getRedis();
-    if (totalSavedInCycle > 0 && redis) {
-      const keys = await redis.keys("articles:*");
-      if (keys.length > 0) await redis.del(...keys);
-    }
-
   } catch (err) {
     console.error("Critical Ingestion Error:", err.message);
   } finally {
@@ -253,31 +281,6 @@ const initializeScheduledTasks = async () => {
 };
 
 initializeScheduledTasks();
-
-/**
- * TASK 2: MIDNIGHT RESETTER (00:00 Every Day)
- * Renews the daily budget and decrements the duration.
- */
-cron.schedule("0 0 * * *", async () => {
-  console.log(" Midnight Reset: Updating Injection Cycles...");
-
-  try {
-    const activeRules = await InjectionScheduleModel.find({ status: 'active' });
-
-    for (const rule of activeRules) {
-      rule.countToday = 0;      // Reset daily budget
-      rule.daysRemaining -= 1;  // One day consumed
-
-      if (rule.daysRemaining <= 0) {
-        rule.status = 'completed';
-      }
-      await rule.save();
-    }
-    console.log("All daily quotas reset.");
-  } catch (err) {
-    console.error("Midnight reset error:", err.message);
-  }
-});
 
 module.exports = {
   initializeScheduledTasks,

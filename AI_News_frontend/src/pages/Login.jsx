@@ -29,7 +29,7 @@ export default function Login() {
       setUser(user);
 
       if (user.role === "admin") {
-        navigate("/admin");
+        navigate("/analytics");
       } else {
         navigate("/");
       }

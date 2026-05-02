@@ -7,20 +7,39 @@ const Article = require("./models/Article");
 
 const app = express();
 
-app.use(cors());
+const allowedOrigins = [
+  process.env.CLIENT_URL,        
+  "http://localhost:5173"         
+];
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS Protocol'));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  credentials: true, 
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
 const frontendDistPath = path.join(__dirname,"..", "..", "AI_News_frontend", "dist");
 
-
-    console.log("--- PATH DEBUG ---");
+console.log("--- PATH DEBUG ---");
 console.log("Looking for assets at:", path.join(frontendDistPath, "assets"));
 console.log("Assets folder exists?", fs.existsSync(path.join(frontendDistPath, "assets")));
-  app.use('/assets', express.static(path.join(frontendDistPath, 'assets'), {
+  
+app.use('/assets', express.static(path.join(frontendDistPath, 'assets'), {
     fallthrough: false // If it's not in /assets, don't let it hit the SEO route
 }));
-   app.use(express.static(frontendDistPath, { index: false }));
-
+   
+app.use(express.static(frontendDistPath, { index: false }));
 
 // Routes
 const articleRoutes = require("./routes/article.routes");
@@ -35,6 +54,7 @@ app.use("/api/profile", require("./routes/profile.routes"));
 app.use("/api/schedules", require("./routes/schedule.routes"));
 app.use("/api/settings", settingsRoutes);
 app.use("/api/site-branding", require("./routes/asset.routes"));
+app.use("/api/maintenance", require("./routes/maintenance.routes"));
 
 app.use(generalLimiter);
 

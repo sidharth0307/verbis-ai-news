@@ -87,7 +87,7 @@ const SystemSettings = () => {
         const assetRes = await assetApi.updateAssets(settings, files);
         currentSettings = { ...currentSettings, ...assetRes.assets };
       }
-      const finalData = await settingsApi.updateSettings(currentSettings);
+      const finalData = await assetApi.updateAssets(currentSettings);
       setSettings(finalData);
       setPreviews({ logo: null, banner: null });
       await refreshBranding();

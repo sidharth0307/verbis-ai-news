@@ -255,20 +255,23 @@ exports.updateCronSchedule = async (req, res) => {
   try {
     const { intervalMinutes, articleExpiryDays } = req.body;
 
-    // 1. Validation: Force a minimum of 15 minutes
-    const interval = parseInt(intervalMinutes);
+    let interval = parseInt(intervalMinutes);
 
+    // 1. Validation: Min 15 mins, Max 60 mins for Burst Window efficiency
     if (isNaN(interval) || interval < 15) {
       return res.status(400).json({
         success: false,
-        message: "For system stability, the ingestion interval must be at least 15 minutes."
+        message: "Ingestion interval must be at least 15 minutes."
       });
     }
 
-    // 2. Convert integer (e.g., 30) to Cron String (e.g., "*/30 * * * *")
-    // If interval is 60 or more, we might want to use "0 */x" format, 
-    // but for simplicity, "*/x" works for most node-cron versions.
-    const newCronString = `*/${interval} * * * *`;
+    if (interval > 60) {
+      interval = 60; // Cap it at 1 hour
+    }
+
+    // 2. Build Cron String
+    // For 60 mins, '0 * * * *' (top of every hour) is cleaner than '*/60'
+    const newCronString = interval === 60 ? "0 * * * *" : `*/${interval} * * * *`;
 
     const updatedSettings = await settingsModel.findOneAndUpdate(
       { key: "model_config" },
@@ -282,18 +285,19 @@ exports.updateCronSchedule = async (req, res) => {
     );
 
     try {
+      // Re-initialize tasks with the new frequency
       await initializeScheduledTasks();
     } catch (cronError) {
-      return res.status(207).json({ // 207 = Multi-Status (Saved but task failed)
+      return res.status(207).json({
         success: true,
-        message: "Settings saved, but the background task failed to restart. Please check server logs.",
+        message: "Settings saved, but cron restart failed. Manual restart may be needed.",
         data: updatedSettings
       });
     }
 
     res.status(200).json({
       success: true,
-      message: `System updated. Next ingestion run scheduled for every ${interval} minutes.`,
+      message: `System updated. Window: 8AM-12PM. Frequency: ${interval} mins.`,
       data: {
         interval: interval,
         cronString: updatedSettings.cronSchedule,
@@ -302,14 +306,9 @@ exports.updateCronSchedule = async (req, res) => {
     });
   } catch (error) {
     console.error("Update Settings Error:", error.message);
-    res.status(500).json({
-      success: false,
-      message: "Failed to update settings.",
-      error: error.message
-    });
+    res.status(500).json({ success: false, message: "Server error updating settings." });
   }
-}
-
+};
 
 exports.getSystemAnalytics = async (req, res) => {
   try {

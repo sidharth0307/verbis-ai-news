@@ -2,29 +2,27 @@ import { Navigate } from "react-router-dom";
 import { useHomeState } from "../context/HomeStateContext";
 
 const AdminRoute = ({ children }) => {
-  // const { user, loading } = useHomeState();
+  const { user, loading } = useHomeState();
+  const token = localStorage.getItem("token");
 
-  // // 1. If we are still fetching the user from the backend, show nothing or a spinner
-  // if (loading) {
-  //   return (
-  //     <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-  //       <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-  //     </div>
-  //   );
-  // }
+  // 1. Critical: Handle loading so we don't redirect accidentally
+  if (loading) {
+    return (
+      <div className="h-screen bg-slate-950 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-blue-500"></div>
+      </div>
+    );
+  }
 
-  // // 2. If loading is finished and user is still undefined/null, they aren't logged in
-  // if (!user) {
-  //   return <Navigate to="/login" replace />;
-  // }
+  const isAdmin = user?.role === "admin" || localStorage.getItem("role") === "admin";
 
-  // // 3. If user exists but role isn't admin
-  // if (user.role !== "admin") {
-  //   return <Navigate to="/" replace />;
-  // }
+  if (!token || !isAdmin) {
+    console.warn("Unauthorized access attempt to Admin.");
+    return <Navigate to="/" replace />;
+  }
 
-  // 4. Authorized
-  return children;
+  // 2. FIX: Render children instead of Outlet
+  return children; 
 };
 
 export default AdminRoute;

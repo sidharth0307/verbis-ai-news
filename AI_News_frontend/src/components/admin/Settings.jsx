@@ -12,9 +12,10 @@ const SettingsForm = ({ currentSettings, onUpdate }) => {
   useEffect(() => {
     if (currentSettings) {
       if (currentSettings.cronSchedule) {
-        const intervalPart = currentSettings.cronSchedule.split('/')[1];
-        const minutes = intervalPart ? parseInt(intervalPart.split(' ')[0]) : 30;
-        setIntervalValue(minutes);
+        // Extracting interval from cron string like "*/30 * * * *" or "0 * * * *"
+        const isHourly = currentSettings.cronSchedule.startsWith("0 *");
+        const minutes = isHourly ? 60 : parseInt(currentSettings.cronSchedule.split('/')[1]);
+        setIntervalValue(minutes || 30);
       }
       if (currentSettings.articleExpiryDays) {
         setExpiry(currentSettings.articleExpiryDays);
@@ -64,19 +65,19 @@ const SettingsForm = ({ currentSettings, onUpdate }) => {
           </p>
           <p className="text-[10px] text-muted font-mono mt-1 uppercase tracking-tight">
             Commiting changes will terminate active ingestion threads and force an 
-            automated core restart.
+            automated core restart. Operational Window: 08:00 - 12:00.
           </p>
         </div>
       </div>
 
       <form onSubmit={handleSubmit} className="p-10 space-y-12">
         
-        {/* 2. INGESTION FREQUENCY (SLIDER) */}
+        {/* 2. INGESTION FREQUENCY (SLIDER) - UPDATED MAX TO 60 */}
         <section className="space-y-6">
           <div className="flex justify-between items-end">
             <div>
               <label className="block text-[10px] font-black text-muted uppercase tracking-[0.3em] mb-2">
-                Ingestion Frequency
+                Ingestion Frequency (8AM-12PM Window)
               </label>
               <div className="flex items-center gap-2">
                 <Terminal size={14} className="text-accent" />
@@ -97,7 +98,7 @@ const SettingsForm = ({ currentSettings, onUpdate }) => {
             <input
               type="range"
               min="15"
-              max="1440"
+              max="60" 
               step="15"
               value={interval}
               onChange={(e) => setIntervalValue(e.target.value)}
@@ -105,7 +106,7 @@ const SettingsForm = ({ currentSettings, onUpdate }) => {
             />
             <div className="flex justify-between mt-4 text-[9px] font-bold text-muted/40 uppercase tracking-widest font-mono">
               <span>15m_min</span>
-              <span>24h_max</span>
+              <span>60m_max</span>
             </div>
           </div>
         </section>
@@ -149,12 +150,6 @@ const SettingsForm = ({ currentSettings, onUpdate }) => {
         <button
           type="submit"
           disabled={loading}
-          /* Changed: 
-             - In Light Mode: Button is Dark (bg-ink)
-             - In Dark Mode: Button stays visible because bg-ink is the darkest shade, 
-               but we add a ring-1 ring-white/10 to give it an edge.
-             - Alternatively: We use bg-accent as the primary in dark mode for better pop.
-          */
           className="group relative w-full bg-ink dark:bg-accent text-white dark:text-white font-black py-6 rounded-2xl uppercase tracking-[0.4em] text-[11px] transition-all hover:bg-accent hover:dark:bg-white hover:dark:text-ink hover:shadow-xl hover:shadow-accent/20 active:scale-[0.98] disabled:opacity-20 disabled:grayscale ring-1 ring-white/5"
         >
           <div className="flex items-center justify-center gap-3">
@@ -165,12 +160,12 @@ const SettingsForm = ({ currentSettings, onUpdate }) => {
       </div>
       </form>
 
-      {/* Range Input Custom Styling */}
       <style jsx>{`
         .studio-range::-webkit-slider-thumb {
           appearance: none;
           width: 24px;
           height: 24px;
+          background: #3b82f6; /* Hardcoded blue if --color-accent is missing */
           background: var(--color-accent);
           border: 4px solid var(--color-paper);
           border-radius: 50%;

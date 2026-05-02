@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { X, Save, Loader2, List, Plus, Newspaper, Layout, ImageIcon, Search, Settings, Globe, FileText, Terminal, Hash } from "lucide-react";
-import { getCategories } from "../../api/articles";
+import categoryApi from "../../api/categories";
 
 const EditArticleDrawer = ({ 
   isOpen, 
@@ -19,7 +19,7 @@ const EditArticleDrawer = ({
       const loadSilos = async () => {
         setLoadingSilos(true);
         try {
-          const silos = await getCategories(); // Uses your new backend endpoint
+          const silos = await categoryApi.getAll(); // Uses your new backend endpoint
           setAvailableSilos(silos);
         } catch (err) {
           console.error("Failed to fetch silos:", err);
@@ -122,13 +122,13 @@ const EditArticleDrawer = ({
           <section className="space-y-8">
             <div className="flex items-center gap-3 border-b border-border pb-3">
               <Globe size={14} className="text-accent" />
-              <h4 className="text-[10px] font-black text-ink uppercase tracking-[0.2em]">Silo Designation</h4>
+              <h4 className="text-[10px] font-black text-ink uppercase tracking-[0.2em]">Category Designation</h4>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-3">
                 <div className="flex justify-between items-center ml-1">
-                  <label className="text-[10px] font-black text-muted uppercase tracking-widest">Silo Target</label>
+                  <label className="text-[10px] font-black text-muted uppercase tracking-widest">Category Target</label>
                   <button 
                     type="button" 
                     onClick={() => setIsManual(!isManual)}

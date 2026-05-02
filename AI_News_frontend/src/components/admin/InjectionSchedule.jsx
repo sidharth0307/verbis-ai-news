@@ -8,7 +8,8 @@ import {
   Layers,
   Target,
   Calendar,
-  AlertTriangle
+  AlertTriangle,
+  Database
 } from "lucide-react";
 import { getCategories } from "../../api/articles";
 import {
@@ -214,7 +215,7 @@ const CreateScheduleModal = ({ isOpen, onClose, onRefresh }) => {
             setFormData(prev => ({ ...prev, category: res[0].slug }));
           }
         } catch (err) {
-          console.error("Failed to load categories");
+          console.error("Failed to load categories",err);
         }
       };
       fetchSilos();

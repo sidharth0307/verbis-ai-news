@@ -13,7 +13,11 @@ export const HomeStateProvider = ({ children }) => {
   const [searchQuery, setSearchQuery] = useState(""); 
 
   // --- AUTH STATES ---
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => {
+    const savedUser = localStorage.getItem("user");
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
+  
   const [loading, setLoading] = useState(true);
 
   // Fetch user profile on mount to check for session/role

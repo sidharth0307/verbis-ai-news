@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { getMe } from "../api/auth";
 import { saveArticle } from "../api/articles";
-import { Mail, Calendar, Heart, Trash2, Check, X, Bookmark, Hash, ArrowUpRight } from "lucide-react";
+import { Mail, Calendar, Heart, Trash2, Check, X, Bookmark, Hash, ArrowUpRight, BellOff, BellRing } from "lucide-react";
+import { userApi } from "../api/users";
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -11,6 +12,8 @@ export default function Profile() {
   const [activeTab, setActiveTab] = useState("saved");
   const [isManageMode, setIsManageMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
+  const [isSubscribed, setIsSubscribed] = useState(user?.isSubscribed ?? false);
+  const [subLoading, setSubLoading] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -22,13 +25,36 @@ export default function Profile() {
       try {
         const data = await getMe();
         setUser(data);
+        setIsSubscribed(data.newsletterSubscribed ?? false);
       } catch (err) { console.error(err); }
       finally { setLoading(false); }
     };
     loadProfile();
   }, [navigate]);
 
-  // Ensure management mode closes if user switches tabs
+  const handleSubscriptionToggle = async () => {
+  const email = user.email;
+  setSubLoading(true);
+
+  try {
+    if (isSubscribed) {
+      // Logic for Unsubscribe
+      if (!window.confirm("Stop receiving the Daily Intelligence Briefing?")) return;
+      await userApi.unsubscribeFromNewsletter(email);
+      setIsSubscribed(false);
+    } else {
+      // Logic for Subscribe
+      await userApi.subscribeToNewsletter(email);
+      setIsSubscribed(true);
+    }
+  } catch (err) {
+    console.error("Subscription Error:", err);
+    alert(err.response?.data?.message || "Failed to update subscription.");
+  } finally {
+    setSubLoading(false);
+  }
+};
+
   const handleTabChange = (tabId) => {
     setActiveTab(tabId);
     setIsManageMode(false);
@@ -63,7 +89,6 @@ export default function Profile() {
 
   return (
     <div className="min-h-screen bg-white text-slate-900 selection:bg-blue-600 selection:text-white">
-      {/* 1. EDITORIAL HEADER */}
       <header className="border-b-2 border-slate-900">
         <div className="mx-auto max-w-7xl px-6 py-12 md:py-20 flex flex-col md:flex-row gap-12 items-center">
           <div className="h-32 w-32 bg-slate-900 text-white flex items-center justify-center text-6xl font-serif italic shrink-0">
@@ -76,29 +101,50 @@ export default function Profile() {
             <h1 className="font-serif text-5xl md:text-7xl font-black tracking-tighter leading-tight mb-6 uppercase">
               {user.name}
             </h1>
-            <div className="flex flex-wrap justify-center md:justify-start gap-x-8 gap-y-2 text-[11px] font-bold uppercase tracking-widest text-slate-400">
+            <div className="flex flex-wrap justify-center md:justify-start gap-x-8 gap-y-4 text-[11px] font-bold uppercase tracking-widest text-slate-400">
               <span className="flex items-center gap-2 text-slate-900 font-black"><Mail size={14} /> {user.email}</span>
-              <span className="flex items-center gap-2 italic">Active since {new Date(user.createdAt).getFullYear()}</span>
-            </div>
+            
+            {/* DYNAMIC STATUS BADGE */}
+            <span className={`flex items-center gap-2 italic transition-colors ${isSubscribed ? "text-green-600" : "text-amber-500"}`}>
+              {isSubscribed ? <Check size={14} /> : <X size={14} />} 
+              Newsletter {isSubscribed ? "Active" : "Inactive"}
+            </span>
+            
+            <span className="flex items-center gap-2 italic">Active since {new Date(user.createdAt).getFullYear()}</span>
           </div>
-          
-          {/* MANAGEMENT TOGGLE: Only visible when "Library" is active */}
-          <div className="shrink-0 flex flex-col gap-4 w-full md:w-auto">
-             {activeTab === "saved" && user.savedArticles?.length > 0 && (
-               <button 
-                onClick={() => { setIsManageMode(!isManageMode); setSelectedIds([]); }}
-                className={`px-8 py-3 text-[10px] font-black uppercase tracking-widest border-2 transition-all ${
-                  isManageMode ? 'bg-red-600 border-red-600 text-white' : 'bg-white border-slate-900 hover:bg-slate-900 hover:text-white'
-                }`}
-              >
-                {isManageMode ? "Cancel Curation" : "Manage Library"}
-              </button>
-             )}
+        </div>
+
+        {/* ACTION PANEL */}
+        <div className="shrink-0 flex flex-col gap-3 w-full md:w-auto">
+          {/* SUBSCRIPTION TOGGLE */}
+          <button 
+            onClick={handleSubscriptionToggle}
+            disabled={subLoading}
+            className={`px-8 py-3 text-[10px] font-black uppercase tracking-widest border-2 transition-all flex items-center justify-center gap-2 disabled:opacity-50 ${
+              isSubscribed 
+                ? "border-slate-200 text-slate-400 hover:border-red-600 hover:text-red-600" 
+                : "border-blue-600 bg-blue-600 text-white hover:bg-slate-900 hover:border-slate-900 shadow-lg shadow-blue-600/20"
+            }`}
+          >
+            {isSubscribed ? <BellOff size={14} /> : <BellRing size={14} />}
+            {subLoading ? "Syncing..." : isSubscribed ? "Unsubscribe Briefing" : "Subscribe to Briefing"}
+          </button>
+
+              {activeTab === "saved" && user.savedArticles?.length > 0 && (
+                <button 
+                 onClick={() => { setIsManageMode(!isManageMode); setSelectedIds([]); }}
+                 className={`px-8 py-3 text-[10px] font-black uppercase tracking-widest border-2 transition-all ${
+                   isManageMode ? 'bg-red-600 border-red-600 text-white' : 'bg-white border-slate-900 hover:bg-slate-900 hover:text-white'
+                 }`}
+               >
+                 {isManageMode ? "Cancel Curation" : "Manage Library"}
+               </button>
+              )}
           </div>
         </div>
       </header>
 
-      {/* 2. STICKY NAV BAR */}
+      {/* STICKY NAV AND ARCHIVE GRID REMAIN UNCHANGED BELOW */}
       <div className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200">
         <div className="mx-auto max-w-7xl px-6 flex items-center justify-between h-16">
           <div className="flex gap-10">
@@ -118,7 +164,6 @@ export default function Profile() {
             ))}
           </div>
           
-          {/* BULK ACTIONS: Scoped to Manage Mode */}
           {isManageMode && activeTab === "saved" && (
             <div className="flex items-center gap-6 animate-in fade-in slide-in-from-right-4">
                <button onClick={handleSelectAll} className="text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-900">
@@ -136,7 +181,6 @@ export default function Profile() {
         </div>
       </div>
 
-      {/* 3. THE ARCHIVE GRID */}
       <main className="mx-auto max-w-7xl px-6 py-12 md:py-20">
         <div className="grid gap-x-10 gap-y-16 sm:grid-cols-2 lg:grid-cols-3">
           {currentArticles?.map((article) => {
@@ -147,7 +191,6 @@ export default function Profile() {
                 className={`group relative flex flex-col ${isManageMode ? 'cursor-pointer' : ''}`}
                 onClick={() => isManageMode && toggleSelect(article._id)}
               >
-                {/* Selection Square (Library Only) */}
                 {isManageMode && (
                   <div className={`absolute top-4 left-4 z-30 h-8 w-8 border-2 flex items-center justify-center transition-all ${
                     isSelected ? "bg-blue-600 border-blue-600 text-white shadow-xl" : "bg-white/90 border-slate-300"

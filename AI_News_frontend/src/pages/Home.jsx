@@ -12,6 +12,7 @@ import { useHomeState } from "../context/HomeStateContext";
 import { getQuickGlanceData } from "../utils/quickGlance";
 import { getUserInteractions } from "../api/auth";
 import SearchInput from "../components/ui/SearchInput";
+import Newsletter from "../components/ui/NewsLetterBox";
 
 export default function Home() {
   const navigate = useNavigate();
@@ -117,7 +118,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-paper font-sans text-ink selection:bg-blue-100">
       {/* 1. TOP TICKER */}
-      <nav className="sticky top-0 z-50 border-b border-border bg-paper/80 backdrop-blur-md py-4 transition-all duration-300">
+      {/* <nav className="sticky top-0 z-50 border-b border-border bg-paper/80 backdrop-blur-md py-4 transition-all duration-300">
         <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
           <div className="flex items-center gap-3 text-blue-700">
             <TrendingUp size={18} strokeWidth={2.5} />
@@ -127,7 +128,7 @@ export default function Home() {
             {new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
           </div>
         </div>
-      </nav>
+      </nav> */}
 
       {/* 2. HERO SECTION */}
       <header className="max-w-7xl mx-auto px-6 py-16 grid grid-cols-1 lg:grid-cols-12 gap-16">
@@ -463,14 +464,8 @@ export default function Home() {
             </section>
 
             {/* Newsletter */}
-            <div className="bg-blue-600 p-10 text-white relative group overflow-hidden rounded-sm shadow-xl shadow-blue-600/20">
-              <Globe className="absolute -right-8 -bottom-8 h-48 w-48 opacity-10 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-[1.5s]" />
-              <div className="relative z-10">
-                <h4 className="text-3xl font-serif font-black italic mb-4 leading-none">Network Updates</h4>
-                <p className="text-blue-100 text-md mb-8 leading-relaxed font-medium">Join 50,000+ analysts receiving daily intelligence briefs.</p>
-                <button className="w-full bg-white text-blue-600 py-4 text-xs font-black uppercase tracking-widest hover:bg-slate-900 hover:text-white transition-all shadow-md">Connect Now</button>
-              </div>
-            </div>
+              <Newsletter variant="editorial" /> 
+            
           </div>
         </aside>
       </div>

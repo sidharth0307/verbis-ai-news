@@ -1,3 +1,4 @@
+const Subscriber = require("../models/Subscriber");
 const User = require("../models/User");
 
 exports.getMyProfile = async (req, res) => {
@@ -17,7 +18,12 @@ exports.getMyProfile = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    res.json(user);
+    const subscription = await Subscriber.findOne({ email: user.email });
+
+    res.json({
+      ...user.toObject(), 
+      newsletterSubscribed: subscription ? subscription.isActive : false
+    });
   } catch (err) {
     console.error("Profile Error:", err);
     res.status(500).json({ message: "Server error" });

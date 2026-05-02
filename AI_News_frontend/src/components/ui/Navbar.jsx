@@ -87,7 +87,7 @@ export default function Navbar() {
           )}
 
           {/* SEARCH: Modern Integrated Dock */}
-          <div className={`flex-1 max-w-xl transition-all duration-700 ${isMobileSearchOpen ? "fixed inset-0 bg-paper z-[60] p-6 flex items-start" : "hidden md:block"}`}>
+          {/* <div className={`flex-1 max-w-xl transition-all duration-700 ${isMobileSearchOpen ? "fixed inset-0 bg-paper z-[60] p-6 flex items-start" : "hidden md:block"}`}>
             <div className="relative w-full group">
               <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
                 <Search size={16} className="text-muted group-focus-within:text-blue-600 transition-colors" />
@@ -96,10 +96,10 @@ export default function Navbar() {
               <SearchInput
                 className="w-full bg-surface border-2 border-transparent focus:border-ink focus:bg-paper h-14 pl-12 pr-4 text-sm font-medium transition-all rounded-none placeholder:text-muted text-ink"
                 placeholder="Search the archive..."
-              />
+              /> */}
 
               {/* Kinetic Border (Underline) */}
-              <div className="absolute bottom-0 left-0 h-[2px] w-0 bg-blue-600 group-focus-within:w-full transition-all duration-700" />
+              {/* <div className="absolute bottom-0 left-0 h-[2px] w-0 bg-blue-600 group-focus-within:w-full transition-all duration-700" />
 
               {isMobileSearchOpen && (
                 <button
@@ -110,7 +110,7 @@ export default function Navbar() {
                 </button>
               )}
             </div>
-          </div>
+          </div> */}
 
           {/* ACTIONS: Adaptive Pill Style */}
           {!isMobileSearchOpen && (

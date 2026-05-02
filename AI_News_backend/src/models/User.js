@@ -33,19 +33,33 @@ const UserSchema = new mongoose.Schema(
     },
     savedArticles: [{ type: mongoose.Schema.Types.ObjectId, ref: "Article" }],
     likedArticles: [{ type: mongoose.Schema.Types.ObjectId, ref: "Article" }],
-    isActive: { type: Boolean, default: true }
+    isActive: { type: Boolean, default: true },
+    isVerified: { type: Boolean, default: false }
   },
   { timestamps: true }
 );
 
 // Hash password
-UserSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
+UserSchema.pre("save", async function () {
+  // 1. Only hash the password if it has been modified (or is new)
+  if (!this.isModified("password")) {
+    return; 
+  }
 
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
-  next();
+  try {
+    // 2. Generate salt and hash
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+  } catch (error) {
+    // 3. If something goes wrong during hashing, throw the error
+    throw new Error(error);
+  }
 });
+
+// Helper method to compare password (useful for login)
+UserSchema.methods.comparePassword = async function (candidatePassword) {
+  return await bcrypt.compare(candidatePassword, this.password);
+};
 
 // Indexing for performance
 UserSchema.index({ savedArticles: 1 });

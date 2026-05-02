@@ -2,6 +2,10 @@
 const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const OTP = require("../models/OTP");
+const crypto = require("crypto");
+const { sendOTPEmail } = require("../utils/nodemailer");
+const Subscriber = require("../models/Subscriber");
 
 // Regex for Email Validation (Controller level double-check)
 const emailRegex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
@@ -27,24 +31,55 @@ exports.register = async (req, res) => {
       return res.status(400).json({ message: "User already exists" });
     }
 
-    // 3. Create User 
-    // SECURITY NOTE: We do NOT pass 'role' from req.body here. 
-    // This prevents a hacker from sending { "role": "admin" } to gain access.
+    // 3. Generate 6-digit OTP
+    const otpCode = crypto.randomInt(100000, 999999).toString();
+
+    // 4. Save OTP to DB (separate collection)
+    await OTP.create({ email, otp: otpCode });
+
+    // 5. Create Unverified User
     const user = await User.create({
       name,
       email,
-      password,
-      role: "user" // Hardcoded default. Admin creation should be a separate, protected route.
+      password, 
+      role: "user",
+      isVerified: false 
     });
 
+    // 6. Send Email
+    await sendOTPEmail(email, otpCode);
+
     res.status(201).json({
-      message: "User registered successfully",
-      user: { id: user._id, name: user.name, email: user.email }
+      message: "Registration successful. Please verify your email with the OTP sent.",
+      email: user.email 
     });
 
   } catch (err) {
     console.error("Register Error:", err);
     res.status(500).json({ message: "Server error during registration" });
+  }
+};
+
+exports.verifyOTP = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    // 1. Find the OTP record
+    const otpRecord = await OTP.findOne({ email, otp });
+
+    if (!otpRecord) {
+      return res.status(400).json({ message: "Invalid or expired OTP" });
+    }
+
+    // 2. Mark user as verified
+    await User.findOneAndUpdate({ email }, { isVerified: true });
+
+    // 3. Delete OTP record (optional but recommended)
+    await OTP.deleteOne({ _id: otpRecord._id });
+
+    res.status(200).json({ message: "Email verified successfully. You can now log in." });
+  } catch (err) {
+    res.status(500).json({ message: "Verification failed" });
   }
 };
 
@@ -61,6 +96,10 @@ exports.login = async (req, res) => {
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(400).json({ message: "Invalid credentials" });
+    }
+     // Check if user exists and is verified
+    if (user && !user.isVerified) {
+      return res.status(401).json({ message: "Please verify your email first." });
     }
 
     // 3. Check Password
@@ -90,6 +129,73 @@ exports.login = async (req, res) => {
   } catch (err) {
     console.error("Login Error:", err);
     res.status(500).json({ message: "Server error during login" });
+  }
+};
+
+exports.subscribeToNewsletter = async (req, res) => {
+  try {
+    const { email } = req.body;
+    const lowerEmail = email.toLowerCase();
+
+    const userExists = await User.findOne({ email: lowerEmail });
+
+    //check if user exists in the user collection
+    if (!userExists) {
+      return res.status(403).json({ 
+        message: "Account not found. Please register to join the daily briefing network.",
+        needsRegistration: true 
+      });
+    }
+    
+    // Use upsert so if they are already a subscriber, it just ensures isActive is true
+    await Subscriber.findOneAndUpdate(
+      { email: email.toLowerCase() },
+      { isActive: true },
+      { upsert: true, new: true }
+    );
+
+    res.status(200).json({ message: "Welcome to the Verbis AI Daily Edition!" });
+  } catch (err) {
+    res.status(500).json({ message: "Subscription failed. Please try again later." });
+  }
+};
+
+exports.unsubscribe = async (req, res) => {
+  try {
+    const { email } = req.query; 
+
+    if (!email) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Email parameter is required." 
+      });
+    }
+
+    // Find the subscriber and deactivate
+    const subscriber = await Subscriber.findOneAndUpdate(
+      { email: email.toLowerCase() },
+      { $set: { isActive: false, unsubscribedAt: new Date() } },
+      { new: true }
+    );
+
+    if (!subscriber) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Subscriber not found." 
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "You have been successfully unsubscribed from Verbis AI briefings."
+    });
+    
+  } catch (error) {
+    console.error("Unsubscribe Error:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Internal server error during unsubscription." 
+    });
   }
 };
 

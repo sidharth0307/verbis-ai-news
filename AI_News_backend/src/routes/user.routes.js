@@ -1,12 +1,29 @@
 // routes/user.routes.js
 const express = require("express");
 const router = express.Router();
-const { register, login, toggleSaveArticle, getUserInteractions, getAllUsers, deleteUser, toggleUserStatus } = require("../controllers/user.controller");
+const { register, login, toggleSaveArticle, getUserInteractions, getAllUsers, deleteUser, toggleUserStatus, verifyOTP, subscribeToNewsletter, unsubscribe } = require("../controllers/user.controller");
 const authMiddleware = require("../middleware/auth.middleware");
 const { authLimiter, interactionLimiter } = require("../middleware/rateLimit");
 
 router.post("/register", authLimiter, register);
+router.post('/verify-otp', verifyOTP);
 router.post("/login", login);
+
+router.post("/newsletter/subscribe", subscribeToNewsletter);
+router.get("/newsletter/unsubscribe", unsubscribe);
+
+router.get("/newsletter/test-trigger", async (req, res) => {
+  try {
+    if (req.query.secret !== process.env.ADMIN_SECRET) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    
+    await runDailyNewsletter();
+    res.status(200).json({ message: "Newsletter process started manually." });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 router.post("/save/:articleId", authMiddleware, interactionLimiter, toggleSaveArticle);
 
@@ -15,6 +32,7 @@ router.get("/interactions", authMiddleware, getUserInteractions);
 
 // Admin Routes
 const authorize = require("../middleware/authorize.middleware");
+const { runDailyNewsletter } = require("../utils/newsletterWorker");
 
 // Routes
 router.get("/admin/all", authMiddleware, authorize('admin'), getAllUsers);

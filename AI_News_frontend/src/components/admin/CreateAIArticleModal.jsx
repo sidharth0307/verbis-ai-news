@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { X, Zap, Globe, Loader2, Link as LinkIcon, Database, Terminal, Type } from "lucide-react";
-import { getCategories } from "../../api/articles";
+import categoryApi from "../../api/categories";
 
 const CreateAIArticleModal = ({ isOpen, onClose, onCreate, loading }) => {
   const initialForm = { 
@@ -21,7 +21,7 @@ const CreateAIArticleModal = ({ isOpen, onClose, onCreate, loading }) => {
       const loadSilos = async () => {
         setFetchingCats(true);
         try {
-          const silos = await getCategories(); // Fetches [{name, slug}, ...]
+          const silos = await categoryApi.getAll(); // Fetches [{name, slug}, ...]
           setAvailableSilos(silos);
           // Auto-select first silo if available
           if (silos.length > 0) setFormData(prev => ({ ...prev, category: silos[0].name }));

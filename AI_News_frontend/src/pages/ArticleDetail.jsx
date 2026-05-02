@@ -9,6 +9,7 @@ import GithubSlugger from 'github-slugger';
 import { getUserInteractions } from "../api/auth";
 import ArticleActions from "../components/ui/ArticleActions";
 import CommentBox from "../components/ui/CommentBox";
+import Newsletter from "../components/ui/NewsLetterBox";
 
 export default function ArticleDetail() {
   const { category, slug } = useParams();
@@ -342,12 +343,8 @@ export default function ArticleDetail() {
             </nav>
 
             <div className="bg-blue-600 p-8 text-white relative group overflow-hidden">
-              <Globe className="absolute -right-4 -bottom-4 h-32 w-32 opacity-10 group-hover:rotate-12 transition-transform duration-1000" />
-              <div className="relative z-10">
-                <h4 className="text-2xl font-serif font-black italic mb-2">Network Updates</h4>
-                <p className="text-blue-100 text-sm mb-6 leading-relaxed">Join 50,000+ analysts receiving daily intelligence briefs.</p>
-                <button className="w-full bg-paper text-blue-600 py-4 text-xs font-black uppercase tracking-widest hover:bg-ink hover:text-paper transition-all">Connect Now</button>
-              </div>
+              {/* Newsletter */}
+                <Newsletter variant="minimal" /> 
             </div>
           </div>
         </aside>

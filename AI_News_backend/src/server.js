@@ -1,11 +1,8 @@
 require("dotenv").config();
 const app = require("./app");
 const connectDB = require("./config/db");
-const { getRedis } = require("./config/redis");
 
 connectDB();
-getRedis();
-
 
 require("./utils/cronIngest");
 
