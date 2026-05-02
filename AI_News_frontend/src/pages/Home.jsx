@@ -112,25 +112,20 @@ export default function Home() {
   };
 
   const handleUpdateArticle = (updated) => {
-    setArticles(prev => prev.map(a => a._id === updated._id ? updated : a));
+    // 1. Update the Global state (Hero, Flash, Silo Slider)
+    setArticles(prev => 
+      prev.map(a => a._id === updated._id ? updated : a)
+    );
+
+    // 2. Update the Journal state (Main Feed, Search Results, Categories)
+    setJournalArticles(prev => 
+      prev.map(a => a._id === updated._id ? updated : a)
+    );
   };
 
   return (
     <div className="min-h-screen bg-paper font-sans text-ink selection:bg-blue-100">
-      {/* 1. TOP TICKER */}
-      {/* <nav className="sticky top-0 z-50 border-b border-border bg-paper/80 backdrop-blur-md py-4 transition-all duration-300">
-        <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
-          <div className="flex items-center gap-3 text-blue-700">
-            <TrendingUp size={18} strokeWidth={2.5} />
-            <span className="text-xs font-black uppercase tracking-[0.2em]">Global AI News</span>
-          </div>
-          <div className="hidden md:block text-xs font-bold text-muted uppercase tracking-widest">
-            {new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-          </div>
-        </div>
-      </nav> */}
-
-      {/* 2. HERO SECTION */}
+      {/* HERO SECTION */}
       <header className="max-w-7xl mx-auto px-6 py-16 grid grid-cols-1 lg:grid-cols-12 gap-16">
 
         {/* THE BIG STORY (Main Hero) */}
