@@ -27,9 +27,15 @@ exports.register = async (req, res) => {
 
     // 2. Check Duplicate
     const exists = await User.findOne({ email });
-    if (exists && exists.isVerified) {
+   if (exists) {
+    if (exists.isVerified) {
       return res.status(400).json({ message: "User already exists" });
+    } else {
+      // If user exists but isn't verified, delete the old unverified record 
+      // so the new one can be created fresh.
+      await User.deleteOne({ _id: exists._id });
     }
+  }
 
     // 3. Generate 6-digit OTP
     const otpCode = crypto.randomInt(100000, 999999).toString();
