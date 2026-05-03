@@ -3,25 +3,15 @@ const nodemailer = require("nodemailer");
 // reusable transporter with Connection Pooling
 const transporter = nodemailer.createTransport({
   host: "smtp.gmail.com",
-  port: 587,
-  secure: false, // Must be false for Port 587
-  pool: true, 
-  maxConnections: 3,
-  maxMessages: 100,
+  port: 465,
+  secure: true, // Use SSL
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
   tls: {
-    // This allows the connection to upgrade to secure (STARTTLS)
-    // without getting stuck on certificate handshakes
-    rejectUnauthorized: false,
-    minVersion: "TLSv1.2"
-  },
-  connectionTimeout: 20000, // Increased to 20s for Render's cold start
-  greetingTimeout: 20000,
-  socketTimeout: 20000,
-  family: 4 //to avoid the IPv6 ENETUNREACH error
+    rejectUnauthorized: false
+  }
 });
 
 /**
