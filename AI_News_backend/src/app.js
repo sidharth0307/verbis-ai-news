@@ -6,6 +6,7 @@ const fs = require("fs");
 const Article = require("./models/Article"); 
 
 const app = express();
+app.set('trust proxy', 1); // Trust first proxy for correct IP logging, crucial for rate limiting and security in production behind a reverse proxy
 
 const allowedOrigins = [
   process.env.CLIENT_URL,        

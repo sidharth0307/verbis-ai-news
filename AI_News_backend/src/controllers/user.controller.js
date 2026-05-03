@@ -259,18 +259,34 @@ exports.getAllUsers = async (req, res) => {
 exports.deleteUser = async (req, res) => {
   try {
     const userId = req.params.id;
-    // Optional: Prevent deleting self
+
+    // 1. Prevent deleting self
     if (req.user.id === userId) {
       return res.status(400).json({ message: "Cannot delete yourself" });
     }
 
-    const deletedMap = await User.findByIdAndDelete(userId);
-    if (!deletedMap) return res.status(404).json({ message: "User not found" });
+    // 2. Find the user first to get their email
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
 
-    res.json({ message: "User deleted successfully", id: userId });
+    const userEmail = user.email;
+
+    // 3. Perform deletions
+    // We use Promise.all to handle both deletions concurrently for speed
+    await Promise.all([
+      User.findByIdAndDelete(userId),
+      Subscriber.findOneAndDelete({ email: userEmail })
+    ]);
+
+    res.json({ 
+      message: "User and associated newsletter subscription removed successfully", 
+      id: userId 
+    });
   } catch (err) {
     console.error("Delete User Error:", err);
-    res.status(500).json({ message: "Failed to delete user" });
+    res.status(500).json({ message: "Failed to delete user and subscription" });
   }
 };
 
