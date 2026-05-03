@@ -6,10 +6,16 @@ const transporter = nodemailer.createTransport({
   pool: true, // Crucial for sending multiple newsletter emails efficiently
   maxConnections: 3,
   maxMessages: 100,
+  secure: true,
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS, 
   },
+  connectionTimeout: 10000, // 10 seconds
+  greetingTimeout: 10000,
+  socketTimeout: 10000,
+  dnsTimeout: 10000,
+  family: 4
 });
 
 /**
