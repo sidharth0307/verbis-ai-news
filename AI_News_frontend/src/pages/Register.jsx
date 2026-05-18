@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { registerUser, verifyOTP } from "../api/auth";
 import { Link, useNavigate } from "react-router-dom";
 import { ChevronLeft, ShieldCheck, UserPlus } from "lucide-react";
+import { registerUser, verifyOTP } from "../api/auth";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -30,6 +30,7 @@ export default function Register() {
         navigate("/login");
       }
     } catch (err) {
+      console.log("Error:", err);
       setError(err.response?.data?.message || "Action failed. Please try again.");
     }
   };

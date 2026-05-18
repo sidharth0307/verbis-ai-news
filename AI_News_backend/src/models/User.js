@@ -34,7 +34,10 @@ const UserSchema = new mongoose.Schema(
     savedArticles: [{ type: mongoose.Schema.Types.ObjectId, ref: "Article" }],
     likedArticles: [{ type: mongoose.Schema.Types.ObjectId, ref: "Article" }],
     isActive: { type: Boolean, default: true },
-    isVerified: { type: Boolean, default: false }
+    isVerified: { type: Boolean, default: false },
+    resetPasswordOTP: { type: String, default: null },
+    resetPasswordExpires: { type: Date, default: null },
+    isResetVerified: { type: Boolean, default: false } 
   },
   { timestamps: true }
 );

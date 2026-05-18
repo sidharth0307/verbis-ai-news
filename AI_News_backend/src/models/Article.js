@@ -35,7 +35,7 @@ const ArticleSchema = new mongoose.Schema(
         ref: "User",
       }
     ],
-    likesCount: { type: Number, default: 0 }, // if you want likes
+    likesCount: { type: Number, default: 0 }, 
     comments: [
       {
         user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },

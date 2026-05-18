@@ -1,14 +1,17 @@
 // routes/user.routes.js
 const express = require("express");
 const router = express.Router();
-const { register, login, toggleSaveArticle, getUserInteractions, getAllUsers, deleteUser, toggleUserStatus, verifyOTP, subscribeToNewsletter, unsubscribe } = require("../controllers/user.controller");
+const { register, login, toggleSaveArticle, getUserInteractions, getAllUsers, deleteUser, toggleUserStatus, verifyOTP, subscribeToNewsletter, unsubscribe, forgotPassword, verifyResetCode, resetPassword } = require("../controllers/user.controller");
 const authMiddleware = require("../middleware/auth.middleware");
 const { authLimiter, interactionLimiter } = require("../middleware/rateLimit");
 
 router.post("/register", authLimiter, register);
-router.post('/verify-otp', verifyOTP);
-router.post("/login", login);
-
+router.post('/verify-otp', authLimiter ,verifyOTP);
+router.post("/login", authLimiter, login);
+router.post("/forgot-password", authLimiter, forgotPassword);
+router.post("/verify-reset-code", authLimiter, verifyResetCode);
+router.post("/reset-password", authLimiter, resetPassword);
+  
 router.post("/newsletter/subscribe", subscribeToNewsletter);
 router.get("/newsletter/unsubscribe", unsubscribe);
 

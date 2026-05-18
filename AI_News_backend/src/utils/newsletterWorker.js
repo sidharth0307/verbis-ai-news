@@ -2,7 +2,7 @@ const Article = require("../models/Article");
 const Subscriber = require("../models/Subscriber");
 const User = require("../models/User");
 const { generateNewsletterHTML, generateDigestHTML } = require("./emailTemplates");
-const { sendMail } = require("./nodemailer");
+const { sendMail } = require("./mailer");
 const cron = require("node-cron");
 
 const getDailyDigestContent = async () => {

@@ -8,6 +8,21 @@ export const logoutUser = async () => {
   delete api.defaults.headers.common["Authorization"];
 };
 
+export const forgotPassword = async (email) => {
+  const response = await api.post("/users/forgot-password", { email });
+  return response.data;
+}
+
+export const verifyResetCode = async (email, otp) => {
+  const response = await api.post("/users/verify-reset-code", { email, otp });
+  return response.data;
+}
+
+export const resetPassword = async (email, newPassword) => {
+  const response = await api.post("/users/reset-password", { email, newPassword });
+  return response.data;
+}
+
 export const registerUser = (data) => api.post("/users/register", data);
 
 export const verifyOTP = (data) => api.post("/users/verify-otp", data);

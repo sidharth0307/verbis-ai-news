@@ -4,7 +4,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const OTP = require("../models/OTP");
 const crypto = require("crypto");
-const { sendOTPEmail } = require("../utils/nodemailer");
+const { sendOTPEmail } = require("../utils/mailer");
 const Subscriber = require("../models/Subscriber");
 
 // Regex for Email Validation (Controller level double-check)
@@ -53,7 +53,7 @@ exports.register = async (req, res) => {
     });
 
     // 6. Send Email
-    await sendOTPEmail(email, otpCode);
+    await sendOTPEmail(email, otpCode,"register");
 
     res.status(201).json({
       message: "Registration successful. Please verify your email with the OTP sent.",
@@ -135,6 +135,100 @@ exports.login = async (req, res) => {
   } catch (err) {
     console.error("Login Error:", err);
     res.status(500).json({ message: "Server error during login" });
+  }
+};
+
+exports.forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: "Please provide your email address" });
+    }
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "User with this email does not exist" });
+    }
+
+    // Generate a secure 6-digit numeric OTP string
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Set expiration to 5 minutes from now to match the email body notice
+    user.resetPasswordOTP = otp;
+    user.resetPasswordExpires = Date.now() + 5 * 60 * 1000; 
+    user.isResetVerified = false; // Reset verification gate state
+    await user.save();
+
+    await sendOTPEmail(user.email, otp, "reset");
+
+    res.status(200).json({ message: "Verification code sent to your email" });
+  } catch (err) {
+    console.error("Forgot Password Error:", err);
+    res.status(500).json({ message: "Server error during password reset request" });
+  }
+};
+
+
+exports.verifyResetCode = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      return res.status(400).json({ message: "Email and verification code are required" });
+    }
+
+    const user = await User.findOne({
+      email,
+      resetPasswordOTP: otp,
+      resetPasswordExpires: { $gt: Date.now() } // Assures code has not expired yet
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: "Invalid or expired verification code" });
+    }
+
+    // Set flag so the final step knows this user passed the token verification step
+    user.isResetVerified = true;
+    await user.save();
+
+    res.status(200).json({ message: "Code verified successfully. Proceed to reset password." });
+  } catch (err) {
+    console.error("Verify Reset Code Error:", err);
+    res.status(500).json({ message: "Server error verifying code" });
+  }
+};
+
+
+exports.resetPassword = async (req, res) => {
+  try {
+    const { email, newPassword } = req.body;
+
+    if (!email || !newPassword) {
+      return res.status(400).json({ message: "Email and new password are required" });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: "Password must be at least 6 characters long" });
+    }
+
+    // Ensure they didn't bypass step 2 to execute this request directly
+    const user = await User.findOne({ email, isResetVerified: true });
+    if (!user) {
+      return res.status(400).json({ message: "Unauthorized password modification attempt or session expired" });
+    }
+
+    user.password = newPassword;
+    // Clean up temporary DB memory traces entirely
+    user.resetPasswordOTP = null;
+    user.resetPasswordExpires = null;
+    user.isResetVerified = false;
+    await user.save();
+
+    res.status(200).json({ message: "Password updated successfully. You can now login." });
+  } catch (err) {
+    console.error("Reset Password Error:", err);
+    res.status(500).json({ message: "Server error altering system password credentials" });
   }
 };
 

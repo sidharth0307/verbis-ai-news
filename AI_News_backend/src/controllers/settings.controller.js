@@ -4,7 +4,6 @@ const { initializeScheduledTasks } = require('../utils/cronIngest');
 const Article = require('../models/Article');
 const InjectionScheduleModel = require('../models/InjectionScheduleModel');
 const User = require('../models/User');
-const { getRedis } = require('../config/redis');
 
 // The Master Groq instance using your private server key
 const masterGroq = new Groq({ apiKey: process.env.GROQ_API_KEY });

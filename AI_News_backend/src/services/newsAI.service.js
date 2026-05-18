@@ -82,12 +82,7 @@ async function callAI(messages) {
     };
   }
 
-  // console.log(`[AI DEBUG] Active Text Provider: ${settings.activeTextProvider}`);
-  // console.log(`[AI DEBUG] Selected Provider: ${provider ? provider.name : 'None'} | Category: ${provider ? provider.category : 'N/A'}`);
-  // console.log(`[AI DEBUG] Auth Header: ${authHeader}`);
-  // console.log(`[AI DEBUG] API Key (First 10 chars): ${apiKey ? apiKey.substring(0, 10) + '...' : 'MISSING'}`);
-
-  // FIX: Robust Header Handling (Auto-correct "Bearer" to "Authorization")
+  // Robust Header Handling (Auto-correct "Bearer" to "Authorization")
   const finalAuthHeader = (authHeader === 'Bearer' || !authHeader) ? 'Authorization' : authHeader;
 
   // Update headers with authentication
