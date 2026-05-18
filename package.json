@@ -5,6 +5,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "install-all": "npm install && npm install --prefix AI_News_frontend && npm install --prefix AI_News_backend",
     "server": "npm run dev --prefix AI_News_backend",
     "client": "npm run dev --prefix AI_News_frontend",
     "build": "npm run build --prefix AI_News_frontend",
