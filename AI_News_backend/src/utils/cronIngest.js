@@ -109,7 +109,12 @@ const runAdaptiveIngestion = async () => {
   }
 
   const now = new Date();
-  const currentHour = now.getHours();
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Kolkata',
+    hour: 'numeric',
+    hourCycle: 'h23'
+  });
+  const currentHour = parseInt(formatter.format(now), 10);
 
   // GUARD: If outside the 4-hour window, don't waste Render hours
   if (currentHour < BURST_START_HOUR || currentHour >= BURST_END_HOUR) {

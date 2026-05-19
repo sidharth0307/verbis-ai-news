@@ -6,7 +6,7 @@ const { runAdaptiveIngestion } = require("../utils/cronIngest");
 const { runDailyNewsletter } = require("../utils/newsletterWorker");
 
 // THE "HEARTBEAT" PULSE
-// Set cron-job.org to hit this every 15 mins between 08:00 - 12:00
+// cron-job.org to hit this every 15 mins between 08:00 - 12:00
 router.get("/pulse", async (req, res) => {
   try {
     const secret = req.query.secret;
@@ -15,15 +15,18 @@ router.get("/pulse", async (req, res) => {
     }
 
     const now = new Date();
-    const currentHour = now.getHours();
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Kolkata',
+      hour: 'numeric',
+      hourCycle: 'h23'
+    });
+    const currentHour = parseInt(formatter.format(now), 10);
 
     // 1. Trigger Ingestion (Always attempts during the window)
-    // The runAdaptiveIngestion function already has the 8AM-12PM guard inside it.
-    runAdaptiveIngestion();
+    runAdaptiveIngestion().catch(err => console.error("Ingestion failed:", err));
 
     // 2. Trigger Newsletter if it's the 9 AM pulse
     if (currentHour === 9) {
-      // We don't await this so the response returns fast
       runDailyNewsletter().catch(err => console.error("9AM Newsletter failed:", err));
     }
 
@@ -37,7 +40,7 @@ router.get("/pulse", async (req, res) => {
   }
 });
 
-// THE MANUAL TRIGGER (For testing or emergency resends)
+// THE MANUAL TRIGGER (For testing)
 router.get("/force", async (req, res) => {
   try {
     const secret = req.query.secret;
