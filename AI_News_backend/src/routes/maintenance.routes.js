@@ -33,7 +33,8 @@ router.get("/pulse", async (req, res) => {
     res.json({ 
       message: "Pulse received. Systems active.",
       tasks: currentHour === 9 ? ["Ingestion", "Newsletter"] : ["Ingestion"],
-      time: now.toLocaleTimeString()
+      serverHourUTC: now.getHours(),
+      calculatedHourIST: currentHour
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
