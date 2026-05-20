@@ -1,5 +1,5 @@
 export const generateDigestHTML = (name, articles) => {
-  const baseUrl = process.env.CLIENT_URL || 'https://verbis-ai.com';
+  const baseUrl = process.env.CLIENT_URL;
   const greetingName = name || 'Reader';
   const articleRows = articles.map(art => `
     <div style="padding: 20px 0; border-bottom: 1px solid #eee;">
@@ -21,7 +21,7 @@ export const generateDigestHTML = (name, articles) => {
         ${art.summary}
       </p>
       
-      <a href="${baseUrl}/article/${art.slug}" style="font-size: 12px; color: #111; font-weight: 800; text-decoration: none; border-bottom: 2px solid #0055ff; padding-bottom: 2px;">
+      <a href="${baseUrl}/article/${art.category}/${art.slug}" style="font-size: 12px; color: #111; font-weight: 800; text-decoration: none; border-bottom: 2px solid #0055ff; padding-bottom: 2px;">
         READ FULL STORY →
       </a>
     </div>
@@ -43,7 +43,7 @@ export const generateDigestHTML = (name, articles) => {
         <div style="text-transform: uppercase; letter-spacing: 1px;">
           <a href="${baseUrl}/profile" style="color: #0055ff; text-decoration: none;">Manage Account</a> 
           <span style="margin: 0 10px;">|</span>
-          <a href="${baseUrl}/unsubscribe" style="color: #999; text-decoration: none;">Unsubscribe</a>
+          <a href="${baseUrl}/profile" style="color: #999; text-decoration: none;">Unsubscribe</a>
         </div>
       </div>
     </div>

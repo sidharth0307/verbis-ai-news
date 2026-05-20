@@ -1,7 +1,7 @@
 const cron = require("node-cron");
 const Article = require("../models/Article");
 const { fetchRawNews } = require("./fetchRawNews");
-const { processNewsWithAI } = require("../services/newsAI.service");
+const { processNewsWithAI, generateSearchQuery } = require("../services/newsAI.service");
 const { addWatermarkAndLogo } = require("../services/watermark.service");
 const cloudinary = require("../config/cloudinary");
 const InjectionScheduleModel = require("../models/InjectionScheduleModel");
@@ -78,28 +78,6 @@ async function cleanupCloudinaryStorage() {
 let isIngesting = false;
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
-/**
- * AI Query Architect: Converts abstract categories into GNews-friendly queries
- */
-async function generateSearchQuery(categoryName) {
-  try {
-    const prompt = `Act as a news SEO expert. Convert the category "${categoryName}" into a GNews API search query. 
-    Use Boolean operators (OR) and quotes for phrases. Keep it under 5 words. 
-    Example Input: "THE AI LIFE" -> Output: ChatGPT OR "Artificial Intelligence" OR Robotics
-    Example Input: "WORK 2.0" -> Output: "Remote Work" OR "Future of Work" OR Automation
-    Return ONLY the query string.`;
-
-    const aiResult = await processNewsWithAI(prompt);
-    // Note: ensure we use the text content from your specific AI result object
-    let query = (aiResult.title || aiResult.rewrittenContent || "").replace(/["']/g, "").trim();
-
-    return query || categoryName;
-  } catch (err) {
-    console.error("AI Query Gen Failed, using fallback:", err.message);
-    return categoryName;
-  }
-}
 
 const runAdaptiveIngestion = async () => {
   // 1. Prevent overlapping runs
@@ -217,7 +195,19 @@ const runAdaptiveIngestion = async () => {
           if (exists) continue;
 
           // AI Rewrite & Image processing
-          const aiResult = await processNewsWithAI(news.content || news.description);
+
+          // Pass the Category Name and Original Title to the AI
+          const aiResult = await processNewsWithAI(
+            news.content || news.description,
+            masterCategory ? masterCategory.name : rule.category,
+            news.title
+          );
+
+          // Check if the AI rejected it as garbage (The Bouncer)
+          if (aiResult.title === "REJECTED") {
+            console.log(`Scraper grabbed irrelevant junk for: ${news.title}. AI rejected it. Skipping.`);
+            continue; 
+          }
           let slug = slugify(aiResult.title, { lower: true, strict: true });
           if (slug.length > 100) slug = slug.substring(0, 100);
 
@@ -232,7 +222,7 @@ const runAdaptiveIngestion = async () => {
             modelUsed: aiResult.modelUsed,
             aiContent: aiResult.rewrittenContent,
             summary: aiResult.summary,
-            category: rule.category,
+            category: masterCategory ? masterCategory.name : rule.category,
             categorySlug: categorySlug,
             url: news.url,
             bannerImage: bannerImageUrl,
@@ -250,7 +240,7 @@ const runAdaptiveIngestion = async () => {
 
         // --- STEP D: RATE LIMIT PROTECTION ---
         console.log(` ${rule.category} complete. Staggering 10s...`);
-        await sleep(10000); // 10-second sleep is safer for GNews free tier
+        await sleep(20000); // 10-second sleep is safer for GNews free tier
 
       } catch (ruleErr) {
         console.error(`Rule Error (${rule.category}):`, ruleErr.message);

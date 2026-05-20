@@ -22,17 +22,16 @@ router.get("/pulse", async (req, res) => {
     });
     const currentHour = parseInt(formatter.format(now), 10);
 
-    // 1. Trigger Ingestion (Always attempts during the window)
-    runAdaptiveIngestion().catch(err => console.error("Ingestion failed:", err));
-
-    // 2. Trigger Newsletter if it's the 9 AM pulse
+    // Trigger Newsletter if it's the 9 AM pulse
     if (currentHour === 9) {
+      console.log("External Pulse: Triggering 9 AM Newsletter dispatch...")
       runDailyNewsletter().catch(err => console.error("9AM Newsletter failed:", err));
     }
 
     res.json({ 
       message: "Pulse received. Systems active.",
-      tasks: currentHour === 9 ? ["Ingestion", "Newsletter"] : ["Ingestion"],
+      tasks: currentHour === 9 ? ["Newsletter"] : ["Heartbeat Only"],
+      time: now.toLocaleTimeString('en-US', { timeZone: 'Asia/Kolkata' }),
       serverHourUTC: now.getHours(),
       calculatedHourIST: currentHour
     });

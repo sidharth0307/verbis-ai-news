@@ -115,16 +115,40 @@ async function callAI(messages) {
   }
 }
 
-exports.processNewsWithAI = async (content) => {
+exports.generateSearchQuery = async (categoryName) => {
+  try {
+    const prompt = `Act as an SEO expert. Convert the category "${categoryName}" into a news API search query. Use boolean operators (OR) and quotes for phrases. Keep it under 5 words. Return ONLY the raw string. Example: "Artificial Intelligence" OR Robotics`;
+
+    const messages = [
+      { role: "system", content: "You output only exact search query strings, nothing else." },
+      { role: "user", content: prompt }
+    ];
+
+    const { content } = await callAI(messages); 
+    
+    return content.replace(/["']/g, "").trim() || categoryName;
+  } catch (err) {
+    console.error("AI Query Gen Failed, using fallback:", err.message);
+    return categoryName;
+  }
+};
+
+exports.processNewsWithAI = async (content, categoryName, originalTitle) => {
   if (!content || content.trim().length === 0) throw new Error("No content provided");
 
   const settings = await settingsModel.findOne({ key: "model_config" }).lean();
   const customPrompt = settings?.globalPrompt || "";
 
   const systemPrompt = `
-    You are a Senior Investigative Journalist and Editor.
-    Your task is to transform raw news into a comprehensive, long-form feature article.
+   You are a Senior Investigative Journalist writing a feature article for the category: "${categoryName}".
     
+    CRITICAL GUARDRAIL:
+    The raw text below was scraped from the web. It is supposed to be about "${originalTitle}". 
+    If the Raw News Data is corrupted (e.g., cookie banners, obituaries, sports scores, or completely unrelated to "${categoryName}"), you MUST abort. 
+    To abort, output EXACTLY this JSON: 
+    {"title": "REJECTED", "rewrittenContent": "REJECTED", "summary": "REJECTED", "seoKeywords": ["REJECTED", "REJECTED", "REJECTED", "REJECTED", "REJECTED"]}
+
+    If the text IS valid, proceed:
     ${customPrompt}
 
     OUTPUT REQUIREMENTS:
