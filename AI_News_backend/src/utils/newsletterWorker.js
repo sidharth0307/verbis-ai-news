@@ -16,7 +16,7 @@ const getDailyDigestContent = async () => {
   })
     .sort({ views: -1, publishedAt: -1 }) // Prioritize popular news, then newest
     .limit(8)
-    .select("title summary slug category bannerImage")
+    .select("title summary slug category categorySlug bannerImage")
     .lean();
 };
 

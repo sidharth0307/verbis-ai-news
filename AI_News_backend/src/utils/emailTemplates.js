@@ -21,7 +21,7 @@ export const generateDigestHTML = (name, articles) => {
         ${art.summary}
       </p>
       
-      <a href="${baseUrl}/article/${art.category}/${art.slug}" style="font-size: 12px; color: #111; font-weight: 800; text-decoration: none; border-bottom: 2px solid #0055ff; padding-bottom: 2px;">
+      <a href="${baseUrl}/article/${art.categorySlug}/${art.slug}" style="font-size: 12px; color: #111; font-weight: 800; text-decoration: none; border-bottom: 2px solid #0055ff; padding-bottom: 2px;">
         READ FULL STORY →
       </a>
     </div>

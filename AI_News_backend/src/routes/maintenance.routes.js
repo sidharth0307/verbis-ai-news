@@ -22,15 +22,9 @@ router.get("/pulse", async (req, res) => {
     });
     const currentHour = parseInt(formatter.format(now), 10);
 
-    // Trigger Newsletter if it's the 9 AM pulse
-    if (currentHour === 9) {
-      console.log("External Pulse: Triggering 9 AM Newsletter dispatch...")
-      runDailyNewsletter().catch(err => console.error("9AM Newsletter failed:", err));
-    }
-
     res.json({ 
       message: "Pulse received. Systems active.",
-      tasks: currentHour === 9 ? ["Newsletter"] : ["Heartbeat Only"],
+      tasks: ["Heartbeat Only"],
       time: now.toLocaleTimeString('en-US', { timeZone: 'Asia/Kolkata' }),
       serverHourUTC: now.getHours(),
       calculatedHourIST: currentHour
