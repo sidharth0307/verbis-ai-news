@@ -109,15 +109,31 @@ const runAdaptiveIngestion = async () => {
 
     await cleanupCloudinaryStorage();
 
-    const activeRules = await InjectionScheduleModel.find({
+    let rawRules = await InjectionScheduleModel.find({
       status: 'active',
-      daysRemaining: { $gt: 0 },
-      $expr: { $lt: ["$countToday", "$articlesPerDay"] }
+      daysRemaining: { $gt: 0 }
     });
 
-    if (activeRules.length === 0) {
-      console.log("System Idle: All daily limits reached.");
-      return;
+    const activeRules = []; 
+
+    for (const rule of rawRules) {
+      const lastRunDate = rule.lastRun ? new Date(rule.lastRun).toDateString() : null;
+      
+      // If it's a new day, reset the quota and decrement days remaining
+      if (lastRunDate !== now.toDateString()) {
+        rule.countToday = 0;
+        rule.daysRemaining = Math.max(0, rule.daysRemaining - 1);
+        
+        if (rule.daysRemaining === 0) {
+          rule.status = 'completed';
+        }
+        
+        await rule.save(); 
+      }
+
+      if (rule.status === 'active' && rule.countToday < rule.articlesPerDay) {
+        activeRules.push(rule);
+      }
     }
 
     let totalSavedInCycle = 0;
